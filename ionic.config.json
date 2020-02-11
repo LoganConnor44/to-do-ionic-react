@@ -1,0 +1,7 @@
+{
+  "name": "ionic-five-react-to-list-app",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react"
+}
