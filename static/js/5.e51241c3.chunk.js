@@ -1,0 +1,2 @@
+(this["webpackJsonpionic-five-react-to-list-app"]=this["webpackJsonpionic-five-react-to-list-app"]||[]).push([[5],{242:function(t,n,i){"use strict";i.r(n),i.d(n,"startStatusTap",(function(){return o}));var e=i(29),o=(i(6),function(){var t=window;t.addEventListener("statusTap",(function(){Object(e.g)((function(){var n=t.innerWidth,i=t.innerHeight,o=document.elementFromPoint(n/2,i/2);if(o){var c=o.closest("ion-content");c&&c.componentOnReady().then((function(){Object(e.m)((function(){return c.scrollToTop(300)}))}))}}))}))})}}]);
+//# sourceMappingURL=5.e51241c3.chunk.js.map
