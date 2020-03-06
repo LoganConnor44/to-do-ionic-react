@@ -4,13 +4,11 @@ import { IonApp, IonRouterOutlet, IonSplitPane } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import { AppPage } from './declarations';
 
-import { ToDoDb } from './service/ToDoDb';
-import { DatabaseContext } from './context/database-context';
-
 import Menu from './components/Menu';
 import Home from './pages/Home';
 import List from './pages/List';
-import { home, list } from 'ionicons/icons';
+import SignIn from './pages/SignIn';
+import { home, list, person } from 'ionicons/icons';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -33,6 +31,11 @@ import './theme/variables.css';
 
 const appPages: AppPage[] = [
 	{
+		title: 'Sign In',
+		url: '/sign-in',
+		icon: person
+	},
+	{
 		title: 'Home',
 		url: '/home',
 		icon: home
@@ -45,20 +48,19 @@ const appPages: AppPage[] = [
 ];
 
 const App: React.FC = () => (
-	<DatabaseContext.Provider value={new ToDoDb()}>
-		<IonApp>
-			<IonReactRouter>
-				<IonSplitPane contentId="main">
-					<Menu appPages={appPages} />
-					<IonRouterOutlet id="main">
-						<Route path="/home" component={Home} exact={true} />
-						<Route path="/home/list" component={List} exact={true} />
-						<Route path="/" render={() => <Redirect to="/home" />} exact={true} />
-					</IonRouterOutlet>
-				</IonSplitPane>
-			</IonReactRouter>
-		</IonApp>
-	</DatabaseContext.Provider>
+	<IonApp>
+		<IonReactRouter>
+			<IonSplitPane contentId="main">
+				<Menu appPages={appPages} />
+				<IonRouterOutlet id="main">
+					<Route path="/sign-in" component={SignIn} exact={true} />
+					<Route path="/home" component={Home} exact={true} />
+					<Route path="/home/list" component={List} exact={true} />
+					<Route path="/" render={() => <Redirect to="/home" />} exact={true} />
+				</IonRouterOutlet>
+			</IonSplitPane>
+		</IonReactRouter>
+	</IonApp>
 );
 
 export default App;

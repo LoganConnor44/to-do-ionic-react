@@ -4,14 +4,15 @@ import { Status } from '../enum/status';
 
 export interface ITask {
     id?: number;
+    remoteId?: number;
     name: string;
+    owner: string;
     status: Status;
-    created: number;
     deadline?: number;
     difficulty: Difficulty;
     importance: Importance;
-    lastModified?: number;
-    owner: string;
+    lastModified: number;
+    created: number;
 }
 
 export interface ITasks extends Array<ITask> {};
