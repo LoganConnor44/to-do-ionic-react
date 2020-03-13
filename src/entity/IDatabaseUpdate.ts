@@ -1,5 +1,5 @@
 export interface IDatabaseUpdate {
     id?: number;
-    database_name: string;
+    databaseName: string;
     lastModified: number;
 }

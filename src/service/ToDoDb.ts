@@ -22,67 +22,30 @@ export class ToDoDb extends Dexie {
     }
 
     addDatabaseEventHooks() {
-            this.databaseUpdates.toArray().then((updates: IDatabaseUpdate[]) => {
-                if (updates.length === 1) {
-                    this.tasks.hook("creating", (primKey, obj, transaction) => {
-                        this.databaseUpdates.update(
-                            //@ts-ignore
-                            updates[0].id,
-                            {
-                                database_name: "browser",
-                                lastModified: Date.now()
-                            }
-                        );
-                    });
-                    this.tasks.hook("deleting", (primKey, obj, transaction) => {
-                        this.databaseUpdates.update(
-                            //@ts-ignore
-                            updates[0].id,
-                            {
-                                database_name: "browser",
-                                lastModified: Date.now()
-                            }                            
-                        );
-                    });
-                    this.tasks.hook("updating", (modifications, primKey, obj, transaction) => {
-                        this.databaseUpdates.update(
-                            //@ts-ignore
-                            updates[0].id,
-                            {
-                                database_name: "browser",
-                                lastModified: Date.now()
-                            }                            
-                        );
-                    });
-                }
-                if (updates.length === 0) {
-                    const newRecord: IDatabaseUpdate = {
-                        database_name: "browser",
-                        lastModified: Date.now()
-                    };
-    
-                    this.tasks.hook("creating", (primKey, obj, transaction) => {
-                        transaction.on("complete").fire =
-                            this.databaseUpdates.put(
-                                newRecord
-                            )
-                        ;
-                    });
-                    this.tasks.hook("deleting", (primKey, obj, transaction) => {
-                        transaction.on("complete").fire(
-                            this.databaseUpdates.put(
-                                newRecord
-                            )
-                        );
-                    });
-                    this.tasks.hook("updating", (modifications, primKey, obj, transaction) => {
-                        transaction.on("complete").fire(
-                            this.databaseUpdates.put(
-                                newRecord
-                            )
-                        );
-                    });
-                }
-            });        
+        this.databaseUpdates.orderBy(`id`).reverse().toArray().then((x: IDatabaseUpdate[]) => {
+            let databaseUpdateRecord: IDatabaseUpdate = {
+                databaseName: "browser",
+                lastModified: Date.now()
+            };
+            if (x.length === 1) {
+                databaseUpdateRecord = {
+                    ...databaseUpdateRecord,
+                    id: x[0].id
+                };
+            }
+            if (x.length > 1) {
+                this.databaseUpdates.clear();
+            }
+            this.tasks.hook("creating", (primKey, obj, transaction) => {
+                transaction.on.complete.fire(this.databaseUpdates.put(databaseUpdateRecord));
+            });
+
+            this.tasks.hook("deleting", (primKey, obj, transaction) => {
+                transaction.on.complete.fire(this.databaseUpdates.put(databaseUpdateRecord));
+            });
+            this.tasks.hook("updating", (modifications, primKey, obj, transaction) => {
+                transaction.on.complete.fire(this.databaseUpdates.put(databaseUpdateRecord));
+            });
+        });       
     }
 }

@@ -60,7 +60,7 @@ const HomePage: React.FC = () => {
 	const toggleLoading: Function = (): void => setIsLoading(!isLoading);
 	const toggleCreateTask: Function = (): void => setAddingNewTask(!addingNewTask);
 	const getIndexOfTaskWithId: Function = (id: number): number => tasks.findIndex(task => task.id === id);
-	const taskService: TaskService = new TaskService(new NetworkService());
+	let taskService: TaskService = new TaskService(new NetworkService());
 
 	/**
      * Updates setTasksRemaining anytime there is a change to `tasks`
@@ -69,6 +69,11 @@ const HomePage: React.FC = () => {
 		console.log('effect called')
 		setTasksRemaining(tasks.filter(task => task.status === Status.ACTIVE).length);
 	}, [tasks]);
+
+	useEffect((): void => {
+		taskService.getAllRemoteTasks('logan connor')
+			.then(x => console.log(x));
+	}, []);
 
 	useEffect(() => {
 		const fetchBrowserAndRemoteData = async (passedTasks: ITasks): Promise<void> => {
@@ -86,7 +91,7 @@ const HomePage: React.FC = () => {
 											const [mergeType, mergedTask] = taskService.merge(x, y);
 											if (mergedTask.id !== undefined) {
 												if (mergeType === "browser") {
-													taskService.updateTaskFromRemote(mergedTask);
+													taskService.updateRemoteTask(mergedTask);
 												}
 												if (mergeType === "remote") {
 													taskService.updateBrowserTask(mergedTask.id, mergedTask)
@@ -138,9 +143,13 @@ const HomePage: React.FC = () => {
 			newUserTask
 		];
 		setTasks(newTasks);
-		taskService.insertBrowserTask(newUserTask).then(
-			addTaskToRemote(newUserTask)
-		);
+		taskService.insertBrowserTask(newUserTask).then( (browserId: number) => {
+			const taskToSendToRemote: ITask = {
+				...newUserTask,
+				id: browserId
+			};
+			addTaskToRemote(taskToSendToRemote)
+		});
 		toggleCreateTask();
 	};
 
@@ -179,7 +188,7 @@ const HomePage: React.FC = () => {
 			...tasks.slice(taskIndex + 1)
 		];
 		setTasks(allExistingTasks);
-		taskService.updateBrowserTaskName(updatedTask);
+		taskService.updateTaskName(updatedTask);
 		toggleEditablility(updatedTask);
 	};
 
@@ -272,7 +281,7 @@ const HomePage: React.FC = () => {
 		} else {
 			items = tasks.map((x, index) => {
 
-				const existsOnRemote: boolean = x.remoteId !== undefined;
+				const existsOnRemote: boolean = x.remoteId !== undefined ? x.remoteId > 0 ? true : false : false;
 				const identifyAsSyncedToRemote = existsOnRemote ? 'success' : undefined;
 				const statusToggleMessage: string = x.status === Status.COMPLETED ? "Undo" : "Done";
 
