@@ -49,6 +49,7 @@ import { ToDoDb } from '../service/ToDoDb';
 import TaskService from '../service/task-service';
 import NetworkService from '../service/network-service';
 import consola from 'consola';
+import { interval } from 'rxjs';
 
 const HomePage: React.FC = () => {
 
@@ -62,6 +63,7 @@ const HomePage: React.FC = () => {
 	const toggleCreateTask: Function = (): void => setAddingNewTask(!addingNewTask);
 	const getIndexOfTaskWithId: Function = (id: number): number => tasks.findIndex(task => task.id === id);
 	let taskService: TaskService = new TaskService(new NetworkService());
+	let [reload, setReload] = useState<number>(0);
 
 	/**
      * Updates setTasksRemaining anytime there is a change to `tasks`
@@ -76,7 +78,12 @@ const HomePage: React.FC = () => {
 			.then(x => consola.log(x));
 	}, []);
 
+	interval(60000).subscribe(x => {
+		console.log("reactive jssssssssssssssssssssssssssssssssss")
+	});
+
 	useEffect(() => {
+
 		const fetchBrowserAndRemoteData = async (passedTasks: ITasks): Promise<void> => {
 			consola.log(`fetchBrowserData called`);
 			try {
