@@ -48,6 +48,7 @@ import EditTask from '../components/EditTask';
 import { ToDoDb } from '../service/ToDoDb';
 import TaskService from '../service/task-service';
 import NetworkService from '../service/network-service';
+import consola from 'consola';
 
 const HomePage: React.FC = () => {
 
@@ -66,23 +67,23 @@ const HomePage: React.FC = () => {
      * Updates setTasksRemaining anytime there is a change to `tasks`
      */
 	useEffect((): void => {
-		console.log('effect called')
+		consola.log('effect called')
 		setTasksRemaining(tasks.filter(task => task.status === Status.ACTIVE).length);
 	}, [tasks]);
 
 	useEffect((): void => {
 		taskService.getAllRemoteTasks('logan connor')
-			.then(x => console.log(x));
+			.then(x => consola.log(x));
 	}, []);
 
 	useEffect(() => {
 		const fetchBrowserAndRemoteData = async (passedTasks: ITasks): Promise<void> => {
-			console.log(`fetchBrowserData called`);
+			consola.log(`fetchBrowserData called`);
 			try {
 				passedTasks.map(tsk => {
-					console.log(`task is being iterated: ${tsk}`);
+					consola.log(`task is being iterated: ${tsk}`);
 					if (tsk.remoteId !== undefined) {
-						console.log(` the remote id is set to ${tsk.remoteId}`);
+						consola.log(` the remote id is set to ${tsk.remoteId}`);
 						taskService.getTaskFromRemote(tsk.remoteId).then((x: ITask) => {
 							if (tsk.id !== undefined) {
 								taskService.getTaskFromBrowser(tsk.id).then((y: ITask | undefined) => {
@@ -104,12 +105,12 @@ const HomePage: React.FC = () => {
 							}
 						});
 					} else {
-						console.log(`in here because remoteid is undefined`)
+						consola.log(`in here because remoteid is undefined`)
 						addTaskToRemote(tsk);
 					}
 				});
 			} catch (error) {
-				console.log(`An error has occurred: ${error}`)
+				consola.log(`An error has occurred: ${error}`)
 				setError(true);
 			}
 		};
@@ -117,8 +118,8 @@ const HomePage: React.FC = () => {
 		taskService.getAllBrowserTasks().then(results => {
 			setTasks(results);
 			fetchBrowserAndRemoteData(results)
-				.then(() => console.log(`fetchbrowserdata completed`))
-				.catch(error => console.log(`We encountered a problem: ${error}`))
+				.then(() => consola.log(`fetchbrowserdata completed`))
+				.catch(error => consola.log(`We encountered a problem: ${error}`))
 				.finally(() => setIsLoading(false));
 		});
 		
@@ -132,8 +133,8 @@ const HomePage: React.FC = () => {
 			name: name,
 			owner: "logan Connor",
 			status: Status.ACTIVE,
-			created: Date.now(),
-			lastModified: Date.now(),
+			created: Date.now() / 1000,
+			lastModified: Date.now() / 1000,
 			difficulty: Difficulty.NORMAL,
 			importance: Importance.MEDIUM
 		};
@@ -159,16 +160,17 @@ const HomePage: React.FC = () => {
 				...browserTask,
 				remoteId: x
 			};
+
 			const newTasks = [
 				...tasks,
 				taskWithRemoteId
 			];
-			console.log('setTasks initiated - screen should be updated')
+			consola.log('setTasks initiated - screen should be updated')
 			setTasks(newTasks);
 			taskService.updateBrowserTaskWithRemoteTaskId(browserTask, x);
 			return true;
 		}).catch(error => {
-			console.log(`oops: ${error}`);
+			consola.log(`oops: ${error}`);
 			return false;
 		});
 	};

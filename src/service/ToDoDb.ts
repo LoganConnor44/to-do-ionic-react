@@ -25,7 +25,7 @@ export class ToDoDb extends Dexie {
         this.databaseUpdates.orderBy(`id`).reverse().toArray().then((x: IDatabaseUpdate[]) => {
             let databaseUpdateRecord: IDatabaseUpdate = {
                 databaseName: "browser",
-                lastModified: Date.now()
+                lastModified: Date.now() / 1000
             };
             if (x.length === 1) {
                 databaseUpdateRecord = {

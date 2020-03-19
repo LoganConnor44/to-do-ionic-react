@@ -17,6 +17,7 @@
     "@types/react-router": "^5.1.4",
     "@types/react-router-dom": "^5.1.3",
     "axios": "^0.19.2",
+    "consola": "^2.11.3",
     "dexie": "^2.0.4",
     "ionicons": "^4.6.3",
     "react": "^16.12.0",

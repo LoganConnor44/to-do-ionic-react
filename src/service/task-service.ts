@@ -3,15 +3,17 @@ import { ITask } from '../entity/itask';
 import { ToDoDb } from '../service/ToDoDb';
 import Dexie from 'dexie';
 import NetworkService from '../service/network-service';
+import consola from 'consola';
 
 class TaskService {
     private db: ToDoDb;
     private domain: string = 'http://localhost:8080/';
     private getPath: string = 'to-do/task/';
+    private countTasksPath: string = 'total-count-for/';
     private getMultipleTasksPath: string = 'to-do/task/?owner=';
     private putPath: string = 'to-do/task/';
     public isOnline: boolean = false;
-    private remoteUpdatesGetPath: string = 'to-do/datase-changes';
+    private remoteUpdatesGetPath: string = 'to-do/database-changes';
 
     constructor(networkconnectivity: NetworkService) {
         this.db = new ToDoDb();
@@ -120,6 +122,14 @@ class TaskService {
         return remoteTask;
     }
 
+    async getCountOfAllRemoteTasks(owner: string): Promise<number> {
+        if (!this.isOnline) {
+            return Promise.reject("Application is not online.");
+        }
+        let response = await axios.get(this.domain + this.getPath + this.countTasksPath + owner);
+        return response.data;
+    }
+
     async getAllRemoteTasks(owner: string): Promise<ITask[]> {
         if (!this.isOnline) {
             return Promise.reject("Application is not online.");
@@ -181,18 +191,16 @@ class TaskService {
     }
 
     async createRemoteTask(browserTask: ITask): Promise<number> {
+        consola.log(`${JSON.stringify(browserTask)}`)
         if (!this.isOnline) {
             return Promise.reject("Application is not online.");
         }
-        let newRemoteTask = {
-            ...browserTask,
-            created: new Date(browserTask.created),
-            lastModified: new Date(browserTask.lastModified)
-        };
+
+        consola.log(browserTask);
 
         let remoteId = await axios.post(
                 this.domain + this.getPath,
-                newRemoteTask
+                browserTask
             ).then(response => {
                 const regEx = new RegExp(/\d+$/);
                 const idFromHeader: RegExpExecArray | null = regEx.exec(response.headers.location);
