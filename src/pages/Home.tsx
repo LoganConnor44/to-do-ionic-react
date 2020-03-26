@@ -76,6 +76,9 @@ const HomePage: React.FC = () => {
 		setTasksRemaining(tasks.filter(task => task.status === Status.ACTIVE).length);
 	}, [tasks]);
 
+	/**
+	 * Checks for any missing tasks from the remote server every minute
+	 */
 	useEffect( () => {
 		const interval = setInterval(() => {
 			checkForMissingDatabaseUpdates();
@@ -84,12 +87,8 @@ const HomePage: React.FC = () => {
 	}, []);
 
 	const checkForMissingDatabaseUpdates = async () => {
-		
 		const remotes: IRemoteTask[] = await taskService.getAllRemoteTasks('logan connor');
 		const allBrowserTasks: IBrowserTask[] = await taskService.getAllBrowserTasksByOwner('logan connor');
-
-		consola.log(`length of remote ${remotes.length}`)
-		consola.log(`length of browser ${allBrowserTasks.length}`)
 
 		if (remotes.length !== allBrowserTasks.length) {
 			taskService.getMissingTasksFromRemote(remotes, allBrowserTasks);
@@ -189,7 +188,6 @@ const HomePage: React.FC = () => {
 				...tasks,
 				taskWithRemoteId
 			];
-			consola.log('setTasks initiated - screen should be updated')
 			setTasks(newTasks);
 			taskService.updateBrowserTaskWithRemoteTaskId(browserTask, x);
 			return true;
@@ -199,9 +197,6 @@ const HomePage: React.FC = () => {
 		});
 	};
 
-	/**
-     * Edits an existing task's name.
-     */
 	const editTask: Function = (updatedTask: IBrowserTask) => {
 		if (updatedTask.id === undefined) {
 			return;
@@ -247,9 +242,6 @@ const HomePage: React.FC = () => {
 		setEditability(updateEditable);
 	};
 
-	/**
-	* Toggles a task's status enum.
-	*/
 	const toggleTaskStatusIndicator: Function = (selectedTask: IBrowserTask): ITasks => {
 		let existingTaskToUpdate: IBrowserTask = tasks.filter(x => x.id === selectedTask.id)[0];
 		const taskIndex: number = getIndexOfTaskWithId(selectedTask.id);
@@ -295,6 +287,35 @@ const HomePage: React.FC = () => {
 		taskService.deleteBrowserTaskById(selectedTask.id);
 	};
 
+
+	interface IStyledTaskItemProps {
+		task: IBrowserTask;
+		synced: boolean;
+	};
+	const StyledTaskItem: Function = (styledTaskItemProps: IStyledTaskItemProps): JSX.Element => {
+		return (
+			<React.Fragment>
+			{
+				styledTaskItemProps.task.status === Status.COMPLETED ?
+					<IonItem button
+						detail
+						detailIcon={checkmarkCircleOutline as any} >
+						<IonLabel><s>{styledTaskItemProps.task.name}</s></IonLabel>
+					</IonItem>
+				:
+					(styledTaskItemProps.task.id !== undefined && editable?.get(styledTaskItemProps.task.id) === true) ?
+					<EditTask currentTask={styledTaskItemProps.task}
+						editTask={editTask} />
+					:
+						<IonItem button>
+							<IonLabel>{styledTaskItemProps.task.name}</IonLabel>
+						</IonItem>
+			}
+			</React.Fragment>
+		);
+	};
+
+
 	const TasksList: Function = (): JSX.Element => {
 		let items;
 
@@ -308,7 +329,6 @@ const HomePage: React.FC = () => {
 			items = tasks.map((x, index) => {
 
 				const existsOnRemote: boolean = x.remoteId !== undefined ? x.remoteId > 0 ? true : false : false;
-				const identifyAsSyncedToRemote = existsOnRemote ? 'success' : undefined;
 				const statusToggleMessage: string = x.status === Status.COMPLETED ? "Undo" : "Done";
 
 				return (
@@ -325,25 +345,9 @@ const HomePage: React.FC = () => {
 							</IonItemOption>
 						</IonItemOptions>
 
-						{
-							x.status === Status.COMPLETED ?
-								<IonItem button
-									detail
-									detailIcon={checkmarkCircleOutline as any}
-									color={identifyAsSyncedToRemote}>
-									<IonLabel><s>{x.name}</s></IonLabel>
-								</IonItem>
-								:
-								(x.id !== undefined && editable?.get(x.id) === true) ?
-									<EditTask currentTask={x}
-										editTask={editTask} />
-									:
-									<IonItem button 
-										color={identifyAsSyncedToRemote}>
-										<IonLabel>{x.name}</IonLabel>
-									</IonItem>
-						}
-
+						<StyledTaskItem task={x}
+							synced={existsOnRemote} />
+						
 						<IonItemOptions side="end">
 							<IonItemOption color="danger"
 								onClick={() => removeTask(x)} >
