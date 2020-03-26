@@ -50,20 +50,23 @@ import TaskService from '../service/task-service';
 import NetworkService from '../service/network-service';
 import consola from 'consola';
 import { interval } from 'rxjs';
+import { IDatabaseUpdate } from '../entity/IDatabaseUpdate';
+import { v4 as uuidv4 } from 'uuid';
+import { IBrowserTask } from '../entity/iBrowserTask';
+import { IRemoteTask } from '../entity/iRemoteTask';
 
 const HomePage: React.FC = () => {
 
-	const [tasks, setTasks] = useState<ITasks>([]);
+	const [tasks, setTasks] = useState<IBrowserTask[]>([]);
 	const [hasError, setError] = useState<boolean>(false);
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const [tasksRemaining, setTasksRemaining] = useState<number>(0);
-	const [editable, setEditability] = useState<Map<number, boolean>>();
+	const [editable, setEditability] = useState<Map<string, boolean>>();
 	const [addingNewTask, setAddingNewTask] = useState<boolean>(false);
-	const toggleLoading: Function = (): void => setIsLoading(!isLoading);
+	//const toggleLoading: Function = (): void => setIsLoading(!isLoading);
 	const toggleCreateTask: Function = (): void => setAddingNewTask(!addingNewTask);
-	const getIndexOfTaskWithId: Function = (id: number): number => tasks.findIndex(task => task.id === id);
+	const getIndexOfTaskWithId: Function = (id: string): number => tasks.findIndex(task => task.id === id);
 	let taskService: TaskService = new TaskService(new NetworkService());
-	let [reload, setReload] = useState<number>(0);
 
 	/**
      * Updates setTasksRemaining anytime there is a change to `tasks`
@@ -73,39 +76,56 @@ const HomePage: React.FC = () => {
 		setTasksRemaining(tasks.filter(task => task.status === Status.ACTIVE).length);
 	}, [tasks]);
 
-	useEffect((): void => {
-		taskService.getAllRemoteTasks('logan connor')
-			.then(x => consola.log(x));
+	useEffect( () => {
+		const interval = setInterval(() => {
+			checkForMissingDatabaseUpdates();
+		}, 60000);
+		return () => clearInterval(interval);
 	}, []);
 
-	interval(60000).subscribe(x => {
-		console.log("reactive jssssssssssssssssssssssssssssssssss")
-	});
+	const checkForMissingDatabaseUpdates = async () => {
+		
+		const remotes: IRemoteTask[] = await taskService.getAllRemoteTasks('logan connor');
+		const allBrowserTasks: IBrowserTask[] = await taskService.getAllBrowserTasksByOwner('logan connor');
+
+		consola.log(`length of remote ${remotes.length}`)
+		consola.log(`length of browser ${allBrowserTasks.length}`)
+
+		if (remotes.length !== allBrowserTasks.length) {
+			taskService.getMissingTasksFromRemote(remotes, allBrowserTasks);
+			const updatedTasks = await taskService.getAllBrowserTasks();
+			setTasks(updatedTasks);
+		} else {
+			consola.log(`everything looks good - the offline and online database matches`)
+		}
+	};
+
+	
 
 	useEffect(() => {
 
-		const fetchBrowserAndRemoteData = async (passedTasks: ITasks): Promise<void> => {
+		const fetchBrowserAndRemoteData = async (passedTasks: IBrowserTask[]): Promise<void> => {
 			consola.log(`fetchBrowserData called`);
 			try {
 				passedTasks.map(tsk => {
 					consola.log(`task is being iterated: ${tsk}`);
 					if (tsk.remoteId !== undefined) {
 						consola.log(` the remote id is set to ${tsk.remoteId}`);
-						taskService.getTaskFromRemote(tsk.remoteId).then((x: ITask) => {
+						taskService.getTaskFromRemote(tsk.remoteId).then((x: IBrowserTask) => {
 							if (tsk.id !== undefined) {
-								taskService.getTaskFromBrowser(tsk.id).then((y: ITask | undefined) => {
+								taskService.getTaskFromBrowser(tsk.id).then((y: IBrowserTask | undefined) => {
 									if (y !== undefined) {
 										if (!taskService.isEquivalent(x, y)) {
-											const [mergeType, mergedTask] = taskService.merge(x, y);
-											if (mergedTask.id !== undefined) {
-												if (mergeType === "browser") {
-													taskService.updateRemoteTask(mergedTask);
-												}
-												if (mergeType === "remote") {
-													taskService.updateBrowserTask(mergedTask.id, mergedTask)
-													taskService.getAllBrowserTasks().then(results => setTasks(results));
-												}
-											}
+											// const [mergeType, mergedTask] = taskService.merge(x, y);
+											// if (mergedTask.id !== undefined) {
+											// 	if (mergeType === "browser") {
+											// 		taskService.updateRemoteTask(mergedTask);
+											// 	}
+											// 	if (mergeType === "remote") {
+											// 		taskService.updateBrowserTask(mergedTask.id, mergedTask)
+											// 		taskService.getAllBrowserTasks().then(results => setTasks(results));
+											// 	}
+											// }
 										}
 									}
 								});
@@ -132,13 +152,12 @@ const HomePage: React.FC = () => {
 		
 	}, []);
 
-	/**
-	 * Adds a new task and defaults it to not complete.
-	 */
+	
 	const addTask: Function = (name: string): void => {
-		const newUserTask: ITask = {
+		const newUserTask: IBrowserTask = {
+			id: uuidv4(),
 			name: name,
-			owner: "logan Connor",
+			owner: "logan connor",
 			status: Status.ACTIVE,
 			created: Date.now() / 1000,
 			lastModified: Date.now() / 1000,
@@ -151,17 +170,15 @@ const HomePage: React.FC = () => {
 			newUserTask
 		];
 		setTasks(newTasks);
-		taskService.insertBrowserTask(newUserTask).then( (browserId: number) => {
-			const taskToSendToRemote: ITask = {
-				...newUserTask,
-				id: browserId
-			};
-			addTaskToRemote(taskToSendToRemote)
+
+		taskService.insertBrowserTask(newUserTask).then( () => {
+			addTaskToRemote(newUserTask)
 		});
+
 		toggleCreateTask();
 	};
 
-	const addTaskToRemote: Function = async (browserTask: ITask): Promise<boolean> => {
+	const addTaskToRemote: Function = async (browserTask: IBrowserTask): Promise<boolean> => {
 		return taskService.createRemoteTask(browserTask).then((x: number) => {
 			const taskWithRemoteId = {
 				...browserTask,
@@ -185,13 +202,13 @@ const HomePage: React.FC = () => {
 	/**
      * Edits an existing task's name.
      */
-	const editTask: Function = (updatedTask: ITask) => {
+	const editTask: Function = (updatedTask: IBrowserTask) => {
 		if (updatedTask.id === undefined) {
 			return;
 		}
 
 		const taskIndex: number = getIndexOfTaskWithId(updatedTask.id);
-		const allExistingTasks: ITask[] = [
+		const allExistingTasks: IBrowserTask[] = [
 			...tasks.slice(0, taskIndex),
 			updatedTask,
 			...tasks.slice(taskIndex + 1)
@@ -201,20 +218,20 @@ const HomePage: React.FC = () => {
 		toggleEditablility(updatedTask);
 	};
 
-	const toggleEditablility: Function = (selectedTask: ITask): void => {
+	const toggleEditablility: Function = (selectedTask: IBrowserTask): void => {
 		if (selectedTask.id === undefined) {
 			return;
 		}
 
 		//initially undefined so populate it
 		if (editable === undefined) {
-			let newValue = new Map<number, boolean>();
+			let newValue = new Map<string, boolean>();
 			newValue.set(selectedTask.id, true);
 			setEditability(newValue);
 			return;
 		}
 
-		let updateEditable = new Map<number, boolean>(editable);
+		let updateEditable = new Map<string, boolean>(editable);
 		//see if an existing value just needs to be switched
 		updateEditable.forEach((value, key) => {
 			if (key === selectedTask.id) {
@@ -233,8 +250,8 @@ const HomePage: React.FC = () => {
 	/**
 	* Toggles a task's status enum.
 	*/
-	const toggleTaskStatusIndicator: Function = (selectedTask: ITask): ITasks => {
-		let existingTaskToUpdate: ITask = tasks.filter(x => x.id === selectedTask.id)[0];
+	const toggleTaskStatusIndicator: Function = (selectedTask: IBrowserTask): ITasks => {
+		let existingTaskToUpdate: IBrowserTask = tasks.filter(x => x.id === selectedTask.id)[0];
 		const taskIndex: number = getIndexOfTaskWithId(selectedTask.id);
 
 		if (existingTaskToUpdate.status === Status.COMPLETED) {
@@ -243,7 +260,7 @@ const HomePage: React.FC = () => {
 			existingTaskToUpdate.status = Status.COMPLETED;
 		}
 
-		const allExistingTasks: ITask[] = [
+		const allExistingTasks: IBrowserTask[] = [
 			...tasks.slice(0, taskIndex),
 			existingTaskToUpdate,
 			...tasks.slice(taskIndex + 1)
@@ -256,7 +273,7 @@ const HomePage: React.FC = () => {
 	/**
      * Sets an existing task to completed.
      */
-	const toggleTaskStatus: Function = (selectedTask: ITask): void => {
+	const toggleTaskStatus: Function = (selectedTask: IBrowserTask): void => {
 		const existingTasks: ITasks = toggleTaskStatusIndicator(selectedTask);
 		if (selectedTask.id === undefined) {
 			return;
@@ -267,11 +284,11 @@ const HomePage: React.FC = () => {
 	/**
      * Removes an existing task from the application state.
      */
-	const removeTask: Function = (selectedTask: ITask): void => {
+	const removeTask: Function = (selectedTask: IBrowserTask): void => {
 		if (selectedTask.id === undefined) {
 			return;
 		}
-		const existingTasks: ITask[] = [...tasks];
+		const existingTasks: IBrowserTask[] = [...tasks];
 		const taskIndex: number = getIndexOfTaskWithId(selectedTask.id);
 		existingTasks.splice(taskIndex, 1);
 		setTasks(existingTasks);

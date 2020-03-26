@@ -3,8 +3,6 @@ import { Importance } from '../enum/importance';
 import { Status } from '../enum/status';
 
 export interface ITask {
-    id?: number;
-    remoteId?: number;
     name: string;
     owner: string;
     status: Status;

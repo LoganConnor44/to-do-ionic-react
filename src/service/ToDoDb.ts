@@ -1,51 +1,22 @@
 import Dexie from 'dexie';
-import { ITask } from '../entity/itask';
 import { IPreference } from '../entity/ipreference';
 import { IDatabaseUpdate } from '../entity/IDatabaseUpdate';
+import { IBrowserTask } from '../entity/iBrowserTask';
 
 export class ToDoDb extends Dexie {
-    tasks: Dexie.Table<ITask, number>;
+    tasks: Dexie.Table<IBrowserTask, string>;
     preferences: Dexie.Table<IPreference, number>;
     databaseUpdates: Dexie.Table<IDatabaseUpdate, number>;
 
     constructor() {
         super('ToDoDb');
         this.version(1).stores({
-            tasks: `++id`,
+            tasks: `id, owner`,
             preferences: `++id`,
-            databaseUpdates: `++id`
+            databaseUpdates: `++id, owner`
         });
         this.tasks = this.table("tasks");
         this.preferences = this.table("preferences");
         this.databaseUpdates = this.table("databaseUpdates");
-        this.addDatabaseEventHooks();
-    }
-
-    addDatabaseEventHooks() {
-        this.databaseUpdates.orderBy(`id`).reverse().toArray().then((x: IDatabaseUpdate[]) => {
-            let databaseUpdateRecord: IDatabaseUpdate = {
-                databaseName: "browser",
-                lastModified: Date.now() / 1000
-            };
-            if (x.length === 1) {
-                databaseUpdateRecord = {
-                    ...databaseUpdateRecord,
-                    id: x[0].id
-                };
-            }
-            if (x.length > 1) {
-                this.databaseUpdates.clear();
-            }
-            this.tasks.hook("creating", (primKey, obj, transaction) => {
-                transaction.on.complete.fire(this.databaseUpdates.put(databaseUpdateRecord));
-            });
-
-            this.tasks.hook("deleting", (primKey, obj, transaction) => {
-                transaction.on.complete.fire(this.databaseUpdates.put(databaseUpdateRecord));
-            });
-            this.tasks.hook("updating", (modifications, primKey, obj, transaction) => {
-                transaction.on.complete.fire(this.databaseUpdates.put(databaseUpdateRecord));
-            });
-        });       
     }
 }

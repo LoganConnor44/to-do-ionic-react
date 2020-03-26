@@ -1,5 +1,7 @@
 export interface IDatabaseUpdate {
     id?: number;
+    browserId: string;
     databaseName: string;
-    lastModified: number;
+    owner: string;
+    created: number;
 }
