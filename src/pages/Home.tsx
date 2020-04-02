@@ -24,41 +24,29 @@ import {
 	IonItemOption,
 	IonItemOptions
 } from '@ionic/react';
-import {
-	checkmarkCircleOutline,
-	add
-} from 'ionicons/icons';
+import { add } from 'ionicons/icons';
 import CreateTask from '../components/CreateTask';
 import React, {
 	useState,
-	useContext,
 	useEffect
 } from 'react';
-import { DatabaseContext } from '../context/database-context';
-import { NetworkContext } from '../context/network-context';
 import './Home.css';
-import {
-	ITask,
-	ITasks
-} from '../entity/itask';
 import { Difficulty } from '../enum/difficulty';
 import { Importance } from '../enum/importance';
 import { Status } from '../enum/status';
-import EditTask from '../components/EditTask';
-import { ToDoDb } from '../service/ToDoDb';
 import TaskService from '../service/task-service';
 import NetworkService from '../service/network-service';
 import consola from 'consola';
-import { interval } from 'rxjs';
-import { IDatabaseUpdate } from '../entity/IDatabaseUpdate';
 import { v4 as uuidv4 } from 'uuid';
 import { IBrowserTask } from '../entity/iBrowserTask';
 import { IRemoteTask } from '../entity/iRemoteTask';
+import TaskItem from '../components/TaskItem';
+import { ITasks } from '../entity/itask';
 
 const HomePage: React.FC = () => {
 
 	const [tasks, setTasks] = useState<IBrowserTask[]>([]);
-	const [hasError, setError] = useState<boolean>(false);
+	//const [hasError, setError] = useState<boolean>(false);
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const [tasksRemaining, setTasksRemaining] = useState<number>(0);
 	const [editable, setEditability] = useState<Map<string, boolean>>();
@@ -71,8 +59,7 @@ const HomePage: React.FC = () => {
 	/**
      * Updates setTasksRemaining anytime there is a change to `tasks`
      */
-	useEffect((): void => {
-		consola.log('effect called')
+	useEffect( (): void => {
 		setTasksRemaining(tasks.filter(task => task.status === Status.ACTIVE).length);
 	}, [tasks]);
 
@@ -81,78 +68,60 @@ const HomePage: React.FC = () => {
 	 */
 	useEffect( () => {
 		const interval = setInterval(() => {
-			checkForMissingDatabaseUpdates();
-		}, 60000);
-		return () => clearInterval(interval);
-	}, []);
+			const getRemoteDatabaseUpdates: Function = async (): Promise<boolean> => {
+				let requestUpdate: boolean = false;
+				const remotes: IRemoteTask[] = await taskService.getAllRemoteTasks('logan connor');
+				const allBrowserTasks: IBrowserTask[] = await taskService.getAllBrowserTasksByOwner('logan connor');
+		
+				// retrieve missing records from remote
+				if (remotes.length !== allBrowserTasks.length) {
+					taskService.getMissingTasksFromRemote(remotes, allBrowserTasks);
+					requestUpdate = true;
+				}
 
-	const checkForMissingDatabaseUpdates = async () => {
-		const remotes: IRemoteTask[] = await taskService.getAllRemoteTasks('logan connor');
-		const allBrowserTasks: IBrowserTask[] = await taskService.getAllBrowserTasksByOwner('logan connor');
-
-		if (remotes.length !== allBrowserTasks.length) {
-			taskService.getMissingTasksFromRemote(remotes, allBrowserTasks);
-			const updatedTasks = await taskService.getAllBrowserTasks();
-			setTasks(updatedTasks);
-		} else {
-			consola.log(`everything looks good - the offline and online database matches`)
-		}
-	};
-
-	
-
-	useEffect(() => {
-
-		const fetchBrowserAndRemoteData = async (passedTasks: IBrowserTask[]): Promise<void> => {
-			consola.log(`fetchBrowserData called`);
-			try {
-				passedTasks.map(tsk => {
-					consola.log(`task is being iterated: ${tsk}`);
-					if (tsk.remoteId !== undefined) {
-						consola.log(` the remote id is set to ${tsk.remoteId}`);
-						taskService.getTaskFromRemote(tsk.remoteId).then((x: IBrowserTask) => {
-							if (tsk.id !== undefined) {
-								taskService.getTaskFromBrowser(tsk.id).then((y: IBrowserTask | undefined) => {
-									if (y !== undefined) {
-										if (!taskService.isEquivalent(x, y)) {
-											// const [mergeType, mergedTask] = taskService.merge(x, y);
-											// if (mergedTask.id !== undefined) {
-											// 	if (mergeType === "browser") {
-											// 		taskService.updateRemoteTask(mergedTask);
-											// 	}
-											// 	if (mergeType === "remote") {
-											// 		taskService.updateBrowserTask(mergedTask.id, mergedTask)
-											// 		taskService.getAllBrowserTasks().then(results => setTasks(results));
-											// 	}
-											// }
-										}
-									}
-								});
-							}
-						});
-					} else {
-						consola.log(`in here because remoteid is undefined`)
-						addTaskToRemote(tsk);
+				// retrieve modified records from remote
+				allBrowserTasks.forEach( async x => {
+					const matchingRemoteTask = remotes.find(y => y.browserId === x.id);
+					if (matchingRemoteTask !== undefined) {
+						const matchingConvertedTask = taskService.convertRemoteTaskToBrowserTask(matchingRemoteTask);
+						if (matchingConvertedTask?.lastModified > x.lastModified) {
+							taskService.updateBrowserTask(matchingConvertedTask.id, matchingConvertedTask);
+							requestUpdate = true;
+						}
 					}
 				});
-			} catch (error) {
-				consola.log(`An error has occurred: ${error}`)
-				setError(true);
-			}
-		};
+				return requestUpdate;
+			};
+			const getLocalDatabaseUpdates: Function = async (updateRequested: boolean) => {
+				const browserTasks = await taskService.getAllBrowserTasks();
+				if (updateRequested || tasks.length !== browserTasks.length) {
+					setTasks(browserTasks);
+				}
+			};
+
+			getRemoteDatabaseUpdates().then((updateRequested: boolean) => getLocalDatabaseUpdates(updateRequested));
+		}, 60000);
+		return () => clearInterval(interval);
+	});
+
+	/**
+	 * Loads the application state with data from the browser db.
+	 */
+	useEffect( (): void => {
 		setIsLoading(true);
 		taskService.getAllBrowserTasks().then(results => {
 			setTasks(results);
-			fetchBrowserAndRemoteData(results)
-				.then(() => consola.log(`fetchbrowserdata completed`))
-				.catch(error => consola.log(`We encountered a problem: ${error}`))
-				.finally(() => setIsLoading(false));
+			setIsLoading(false);
 		});
-		
-	}, []);
-
 	
+	}, []); // eslint-disable-line react-hooks/exhaustive-deps
+	
+	/**
+     * Add a new task in the application.
+     */
 	const addTask: Function = (name: string): void => {
+		consola.info(`STARTING - adding task for ${name}`);
+
 		const newUserTask: IBrowserTask = {
 			id: uuidv4(),
 			name: name,
@@ -169,35 +138,30 @@ const HomePage: React.FC = () => {
 			newUserTask
 		];
 		setTasks(newTasks);
-
-		taskService.insertBrowserTask(newUserTask).then( () => {
-			addTaskToRemote(newUserTask)
-		});
-
 		toggleCreateTask();
-	};
 
-	const addTaskToRemote: Function = async (browserTask: IBrowserTask): Promise<boolean> => {
-		return taskService.createRemoteTask(browserTask).then((x: number) => {
+		taskService.insertTask(newUserTask).then(remoteId => {
 			const taskWithRemoteId = {
-				...browserTask,
-				remoteId: x
+				...newUserTask,
+				remoteId: remoteId
 			};
-
-			const newTasks = [
+			
+			const newTasksWithRemoteId = [
 				...tasks,
 				taskWithRemoteId
 			];
-			setTasks(newTasks);
-			taskService.updateBrowserTaskWithRemoteTaskId(browserTask, x);
-			return true;
-		}).catch(error => {
-			consola.log(`oops: ${error}`);
-			return false;
+			setTasks(newTasksWithRemoteId);
+	
+			taskService.updateBrowserTaskWithRemoteTaskId(newUserTask, remoteId);
 		});
 	};
 
-	const editTask: Function = (updatedTask: IBrowserTask) => {
+	/**
+     * Edits an existing task in the application.
+     */
+	const editTask: Function = (updatedTask: IBrowserTask): void => {
+		consola.info(`STARTING - editing task for ${updatedTask.name}`);
+
 		if (updatedTask.id === undefined) {
 			return;
 		}
@@ -218,7 +182,7 @@ const HomePage: React.FC = () => {
 			return;
 		}
 
-		//initially undefined so populate it
+		// initially undefined so populate it
 		if (editable === undefined) {
 			let newValue = new Map<string, boolean>();
 			newValue.set(selectedTask.id, true);
@@ -227,14 +191,14 @@ const HomePage: React.FC = () => {
 		}
 
 		let updateEditable = new Map<string, boolean>(editable);
-		//see if an existing value just needs to be switched
+		// see if an existing value just needs to be switched
 		updateEditable.forEach((value, key) => {
 			if (key === selectedTask.id) {
 				updateEditable.set(key, !value);
 			}
 		});
 
-		//if the id passed in still isn't in the map - set it
+		// if the id passed in still isn't in the map - set it
 		if (!updateEditable.has(selectedTask.id)) {
 			updateEditable.set(selectedTask.id, true);
 		}
@@ -266,17 +230,19 @@ const HomePage: React.FC = () => {
      * Sets an existing task to completed.
      */
 	const toggleTaskStatus: Function = (selectedTask: IBrowserTask): void => {
-		const existingTasks: ITasks = toggleTaskStatusIndicator(selectedTask);
+		toggleTaskStatusIndicator(selectedTask);
 		if (selectedTask.id === undefined) {
 			return;
 		}
-		taskService.updateBrowserTaskStatus(selectedTask);
+		taskService.updateTaskStatus(selectedTask);
 	};
 
 	/**
-     * Removes an existing task from the application state.
+     * Removes an existing task from the application.
      */
 	const removeTask: Function = (selectedTask: IBrowserTask): void => {
+		consola.info(`STARTING - removing task for ${selectedTask.name}`);
+
 		if (selectedTask.id === undefined) {
 			return;
 		}
@@ -285,36 +251,10 @@ const HomePage: React.FC = () => {
 		existingTasks.splice(taskIndex, 1);
 		setTasks(existingTasks);
 		taskService.deleteBrowserTaskById(selectedTask.id);
+		if (selectedTask.remoteId !== null && selectedTask.remoteId !== undefined) {
+			taskService.deleteRemoteTaskById(selectedTask.remoteId);
+		}
 	};
-
-
-	interface IStyledTaskItemProps {
-		task: IBrowserTask;
-		synced: boolean;
-	};
-	const StyledTaskItem: Function = (styledTaskItemProps: IStyledTaskItemProps): JSX.Element => {
-		return (
-			<React.Fragment>
-			{
-				styledTaskItemProps.task.status === Status.COMPLETED ?
-					<IonItem button
-						detail
-						detailIcon={checkmarkCircleOutline as any} >
-						<IonLabel><s>{styledTaskItemProps.task.name}</s></IonLabel>
-					</IonItem>
-				:
-					(styledTaskItemProps.task.id !== undefined && editable?.get(styledTaskItemProps.task.id) === true) ?
-					<EditTask currentTask={styledTaskItemProps.task}
-						editTask={editTask} />
-					:
-						<IonItem button>
-							<IonLabel>{styledTaskItemProps.task.name}</IonLabel>
-						</IonItem>
-			}
-			</React.Fragment>
-		);
-	};
-
 
 	const TasksList: Function = (): JSX.Element => {
 		let items;
@@ -333,7 +273,6 @@ const HomePage: React.FC = () => {
 
 				return (
 					<IonItemSliding key={index}>
-
 						<IonItemOptions side="start">
 							<IonItemOption color="primary"
 								onClick={() => toggleTaskStatus(x)}>
@@ -344,22 +283,20 @@ const HomePage: React.FC = () => {
 								Edit
 							</IonItemOption>
 						</IonItemOptions>
-
-						<StyledTaskItem task={x}
-							synced={existsOnRemote} />
-						
+						<TaskItem task={x}
+							synced={existsOnRemote}
+							editable={editable}
+							editTask={editTask} />
 						<IonItemOptions side="end">
 							<IonItemOption color="danger"
 								onClick={() => removeTask(x)} >
 								Delete
 							</IonItemOption>
 						</IonItemOptions>
-
 					</IonItemSliding>
 				);
 			});
 		}
-
 		return (
 			<IonList>
 				{items}
@@ -377,10 +314,7 @@ const HomePage: React.FC = () => {
 					<IonTitle>Home</IonTitle>
 				</IonToolbar>
 			</IonHeader>
-			{
-				isLoading &&
-					<IonProgressBar type="indeterminate"></IonProgressBar>
-			}
+			{ isLoading && <IonProgressBar type="indeterminate"></IonProgressBar> }
 			<IonContent className='create-input'>
 				<IonCard className="tasks-card">
 					<IonCardHeader>
@@ -402,8 +336,6 @@ const HomePage: React.FC = () => {
 							<CreateTask addTask={addTask} />
 						</IonList>
 				}
-				
-				
 			</IonContent>
 		</IonPage>
 	);

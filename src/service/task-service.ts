@@ -1,9 +1,7 @@
 import axios from 'axios';
 import { ITask } from '../entity/itask';
 import { IRemoteTask } from '../entity/iRemoteTask';
-import { IDatabaseUpdate } from '../entity/IDatabaseUpdate';
 import { ToDoDb } from '../service/ToDoDb';
-import Dexie from 'dexie';
 import NetworkService from '../service/network-service';
 import consola from 'consola';
 import { IBrowserTask } from '../entity/iBrowserTask';
@@ -12,6 +10,7 @@ class TaskService {
     private db: ToDoDb;
     private domain: string = 'http://localhost:8080/';
     private getPath: string = 'to-do/task/';
+    private deletePath: string = 'to-do/task/'
     private getRemoteUpdatesPath: string = 'to-do/updates/';
     private getOwnerUpdatesPath: string = 'by-owner/';
     private countTasksPath: string = 'total-count-for/';
@@ -28,24 +27,24 @@ class TaskService {
 
     private subscribeToNetworkConnectivity(networkService: NetworkService): void {
         networkService.connectionChanged().subscribe(online => {
-            if (online) {
-                console.log('went online');
-            } else {
-                console.log('went offline');
-            }
             this.isOnline = online;
-            console.log(this.isOnline);
+            consola.info(`The application is ${this.isOnline ? 'online' : 'offline'}`);
         });
     }
 
     updateTaskName(task: IBrowserTask) {
+        consola.info(`INITIATING - update for browser and remote databases.`);
+
+        task.lastModified = Date.now() / 1000;
+
         this.updateBrowserTaskName(task).then( async () => {
             this.updateRemoteTask(task);
             return true;
-        }).catch(error => console.log(`An Error Occured Saving To The Browser Database: ${error}`));
+        }).catch(error => consola.error(`An Error Occured Saving To The Browser Database: ${error}`));
     }
 
     updateBrowserTask(browserId: string, updatedTask: ITask) {
+        consola.info('EXECUTING - update task in browser db.')
         this.db.transaction('rw', this.db.tasks, this.db.databaseUpdates, () => {
             this.db.tasks.update(browserId, updatedTask);
         });
@@ -63,6 +62,8 @@ class TaskService {
     }
 
     updateBrowserTaskName(task: IBrowserTask): Promise<void> {
+        consola.info(`EXECUTING - update task in browser db.`);
+
         return this.db.transaction('rw', this.db.tasks, this.db.databaseUpdates, () => {
             if (task.id !== undefined) {
                 this.db.tasks.update(
@@ -73,7 +74,13 @@ class TaskService {
         });
     }
 
-    updateBrowserTaskStatus(task: IBrowserTask) {
+    public updateTaskStatus(task: IBrowserTask) {
+        task.lastModified = Date.now() / 1000;
+        this.updateBrowserTaskStatus(task);
+        this.updateRemoteTask(task);
+    }
+
+    private updateBrowserTaskStatus(task: IBrowserTask) {
         this.db.transaction('rw', this.db.tasks, this.db.databaseUpdates, () => {
             if (task.id !== undefined) {
                 this.db.tasks.update(
@@ -85,9 +92,18 @@ class TaskService {
     }
 
     deleteBrowserTaskById(id: string) {
+        consola.info(`EXECUTING - delete task in browser db.`);
+
         this.db.transaction('rw', this.db.tasks, this.db.databaseUpdates, () => {
             this.db.tasks.where("id").equals(id).delete();
         });
+    }
+
+    async deleteRemoteTaskById(id: number) {
+        consola.info(`EXECUTING - delete task in remote db.`);
+
+        let response = await axios.delete(this.domain + this.deletePath + id);
+        return response.status;
     }
 
     public async getAllBrowserTasks(): Promise<IBrowserTask[]> {
@@ -98,13 +114,15 @@ class TaskService {
         return this.db.tasks.where('owner').equals(owner).toArray();
     }
 
-    insertBrowserTask(newUserTask: IBrowserTask): Promise<string> {
-        consola.log(`inserting task into browser db`);
-        return this.db.tasks.put(newUserTask).then( (id: string) => id);
+    public async insertTask(newUserTask: IBrowserTask): Promise<number> {
+        consola.info(`INITIATING - insert for browser and remote databases.`);
+        await this.insertBrowserTask(newUserTask);
+        return await this.createRemoteTask(newUserTask);
     }
 
-    async hasRemoteDatabaseBeenUpdated() {
-        let response = await axios.get(this.remoteUpdatesGetPath);
+    insertBrowserTask(newUserTask: IBrowserTask): Promise<string> {
+        consola.info(`EXECUTING - insert task into browser db.`);
+        return this.db.tasks.put(newUserTask).then( (id: string) => id);
     }
 
     public convertRemoteTaskToBrowserTask(remoteTask: IRemoteTask): IBrowserTask {
@@ -155,14 +173,6 @@ class TaskService {
         return browserTaskFromRemote;
     }
 
-    async getCountOfAllRemoteTasks(owner: string): Promise<number> {
-        if (!this.isOnline) {
-            return Promise.reject("Application is not online.");
-        }
-        let response = await axios.get(this.domain + this.getPath + this.countTasksPath + owner);
-        return response.data;
-    }
-
     async getAllRemoteTasks(owner: string): Promise<IRemoteTask[]> {
         if (!this.isOnline) {
             return Promise.reject("Application is not online.");
@@ -171,12 +181,14 @@ class TaskService {
         return response.data;
     }
 
-    async getTaskFromBrowser(id: string): Dexie.Promise<IBrowserTask | undefined> {
-        let response: IBrowserTask | undefined = await this.db.tasks.get(id);
-        return response;
-    }
+    // async getTaskFromBrowser(id: string): Dexie.Promise<IBrowserTask | undefined> {
+    //     let response: IBrowserTask | undefined = await this.db.tasks.get(id);
+    //     return response;
+    // }
 
-    async updateRemoteTask(browserTask: ITask): Promise<boolean> {
+    private async updateRemoteTask(browserTask: IBrowserTask): Promise<boolean> {
+        consola.info(`EXECUTING - update task in remote db.`);
+
         if (!this.isOnline) {
             return Promise.reject("Application is not online.");
         }
@@ -190,60 +202,24 @@ class TaskService {
         return true;
     }
 
+    // async getRemoteUpdatesByOwner(owner: string): Promise<any> {
+    //     if (!this.isOnline) {
+    //         return Promise.reject("Application is not online.");
+    //     }
+    //     let response = await axios.get(this.domain + this.getRemoteUpdatesPath + this.getOwnerUpdatesPath + owner);
+    //     return response.data;
+    // }
 
-
-
-    async getRemoteUpdatesByOwner(owner: string): Promise<any> {
-        if (!this.isOnline) {
-            return Promise.reject("Application is not online.");
-        }
-        let response = await axios.get(this.domain + this.getRemoteUpdatesPath + this.getOwnerUpdatesPath + owner);
-        return response.data;
-    }
-
-    async getBrowserUpdatesByOwner(owner: string): Promise<IDatabaseUpdate[]> {
-        return this.db.databaseUpdates.where('owner').equals(owner).toArray();
-    }
-    
-
-    /**
-     * Convert the tasks' lastModified dates to javascript Date objects and determine which one happened last.
-     * Return the updated ITask with the help of the spread operator.
-     * 
-     * When merging the remote task, remember to set the id because we manually removed it in getTaskFromRemote() .
-     * 
-     * @param remoteTask The api's task
-     * @param browserTask The javascript browser task
-     */
-    merge(remoteTask: IBrowserTask, browserTask: IBrowserTask): [string, IBrowserTask] {
-        let mergedTask;
-        const remoteDate: Date = new Date(remoteTask.lastModified * 1000);
-        const browserDate: Date = new Date(browserTask.lastModified);
-        let mergeType: string;
-        if (remoteDate > browserDate) {
-            mergedTask = {
-                ...browserTask,
-                ...remoteTask,
-                id: browserTask.id
-            }
-            mergeType = 'remote';
-        } else {
-            mergedTask = {
-                ...remoteTask,
-                ...browserTask
-            };
-            mergeType = 'browser'
-        }
-        return [mergeType, mergedTask];
-    }
+    // async getBrowserUpdatesByOwner(owner: string): Promise<IDatabaseUpdate[]> {
+    //     return this.db.databaseUpdates.where('owner').equals(owner).toArray();
+    // }
 
     async createRemoteTask(browserTask: ITask): Promise<number> {
-        consola.log(`${JSON.stringify(browserTask)}`)
+        consola.info(`EXECUTING - insert task into remote db.`);
+
         if (!this.isOnline) {
             return Promise.reject("Application is not online.");
         }
-
-        consola.log(browserTask);
 
         let remoteId = await axios.post(
                 this.domain + this.getPath,
@@ -253,7 +229,7 @@ class TaskService {
                 const idFromHeader: RegExpExecArray | null = regEx.exec(response.headers.location);
                 return idFromHeader;
             }).catch(error => {
-                console.log(`Error when creating a remote task: ${error}`);
+                consola.error(`Error when creating a remote task: ${error}`);
                 return null;
             });
 
@@ -264,58 +240,16 @@ class TaskService {
         return parseInt(remoteId[0]);
     }
 
-    isEquivalent(remoteTask: ITask, browserTask: ITask): boolean {
-        // @ts-ignore
-        //delete remoteTask.goal;
-        // @ts-ignore
-        delete remoteTask.parentTask;
-        // @ts-ignore
-        delete remoteTask.parentTask;
-        // @ts-ignore
-        delete remoteTask.owner;
-        // @ts-ignore
-        delete browserTask.owner;
-        // @ts-ignore
-        delete browserTask.description;
-
-        // Create arrays of property names
-        var remoteTaskProps = Object.getOwnPropertyNames(remoteTask);
-        var browserTaskProps = Object.getOwnPropertyNames(browserTask);
-    
-        // If number of properties is different,
-        // objects are not equivalent
-        if (remoteTaskProps.length !== browserTaskProps.length) {
-            return false;
-        }
-    
-        for (var i = 0; i < remoteTaskProps.length; i++) {
-            var propName: string = remoteTaskProps[i];
-    
-            // If values of same property are not equal,
-            // objects are not equivalent
-
-            // @ts-ignore
-            if (remoteTask[propName] !== browserTask[propName]) {
-                return false;
-            }
-        }
-    
-        // If we made it this far, objects
-        // are considered equivalent
-        return true;
-    }
-
     public getMissingTasksFromRemote(remotes: IRemoteTask[], allBrowserTasks: IBrowserTask[]): void {
-        consola.log(`a sync is needed at the owner level`);
+        consola.info(`INITIATING - A browser sync at the owner level.`);
+
         const allRemoteTasks: IBrowserTask[] = this.convertRemoteTasksToBrowserTasks(
             remotes
         );
         const remoteTasksIds: string[] = allRemoteTasks.map(x => x.id);
         const browserTasksIds: string[] = allBrowserTasks.map(x => x.id);
         const remoteIdsNotInBrowser: string[] = remoteTasksIds.filter(x => !browserTasksIds.includes(x));
-        consola.log(`the ids not in the browser ${remoteIdsNotInBrowser}`)
         const missingRemoteTasks: IBrowserTask[] = allRemoteTasks.filter(x => remoteIdsNotInBrowser.includes(x.id));
-        consola.log(`the full tasks not in the browser db ${missingRemoteTasks}`)
         missingRemoteTasks.forEach(task => this.insertBrowserTask(task));
     }
 };

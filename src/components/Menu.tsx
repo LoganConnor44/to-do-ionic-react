@@ -10,7 +10,6 @@ import {
   IonTitle,
   IonToolbar
 } from '@ionic/react';
-import { person, personAdd } from 'ionicons/icons';
 import React from 'react';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { AppPage } from '../declarations';

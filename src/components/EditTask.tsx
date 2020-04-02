@@ -36,7 +36,6 @@ const EditTask = (EditTaskProps: IEditTaskProps) => {
         };
 		EditTaskProps.editTask(updatedTask);
 		setValue("");
-		console.log(`task created for ${userValue}`);
 	};
 
 	return (

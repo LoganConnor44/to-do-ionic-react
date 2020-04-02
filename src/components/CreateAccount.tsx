@@ -14,10 +14,10 @@ const CreateAccount = (CreateAccountProps: ICreateAccountProps) => {
     const [commonName, setCommonName] = useState<string>('');
     const [userName, setUserName] = useState<string>('');
     const [password, setPassword] = useState<string>('');
-    const [email, setEmail] = useState<string>('');
+    // const [email, setEmail] = useState<string>('');
 
-    const validateEmail: Function = (email: string) => email.includes('@');
-    const validatePassword: Function = (password: string) => password.length > 4;
+    // const validateEmail: Function = (email: string) => email.includes('@');
+    // const validatePassword: Function = (password: string) => password.length > 4;
 
 	const handleSubmitToCreateAccount = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
 		event.preventDefault();

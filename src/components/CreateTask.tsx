@@ -31,7 +31,6 @@ const CreateTask = (CreateTaskProps: ICreateTaskProps) => {
 		}
 		CreateTaskProps.addTask(value);
 		setValue("");
-		console.log(`task created for ${value}`);
 	};
 
 	return (
