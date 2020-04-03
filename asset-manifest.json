@@ -17,13 +17,13 @@
     "static/js/7.22cde241.chunk.js": "/to-do-ionic-react/static/js/7.22cde241.chunk.js",
     "static/js/7.22cde241.chunk.js.map": "/to-do-ionic-react/static/js/7.22cde241.chunk.js.map",
     "main.css": "/to-do-ionic-react/static/css/main.db6a66be.chunk.css",
-    "main.js": "/to-do-ionic-react/static/js/main.a4f4bed4.chunk.js",
-    "main.js.map": "/to-do-ionic-react/static/js/main.a4f4bed4.chunk.js.map",
+    "main.js": "/to-do-ionic-react/static/js/main.2d2ec4eb.chunk.js",
+    "main.js.map": "/to-do-ionic-react/static/js/main.2d2ec4eb.chunk.js.map",
     "runtime-main.js": "/to-do-ionic-react/static/js/runtime-main.cf9277a3.js",
     "runtime-main.js.map": "/to-do-ionic-react/static/js/runtime-main.cf9277a3.js.map",
     "static/css/10.dcd799cf.chunk.css": "/to-do-ionic-react/static/css/10.dcd799cf.chunk.css",
-    "static/js/10.cac1330e.chunk.js": "/to-do-ionic-react/static/js/10.cac1330e.chunk.js",
-    "static/js/10.cac1330e.chunk.js.map": "/to-do-ionic-react/static/js/10.cac1330e.chunk.js.map",
+    "static/js/10.bbf8e902.chunk.js": "/to-do-ionic-react/static/js/10.bbf8e902.chunk.js",
+    "static/js/10.bbf8e902.chunk.js.map": "/to-do-ionic-react/static/js/10.bbf8e902.chunk.js.map",
     "static/js/11.d9841356.chunk.js": "/to-do-ionic-react/static/js/11.d9841356.chunk.js",
     "static/js/11.d9841356.chunk.js.map": "/to-do-ionic-react/static/js/11.d9841356.chunk.js.map",
     "static/js/12.59f227f5.chunk.js": "/to-do-ionic-react/static/js/12.59f227f5.chunk.js",
@@ -203,11 +203,11 @@
     "static/js/99.a99e4ac8.chunk.js": "/to-do-ionic-react/static/js/99.a99e4ac8.chunk.js",
     "static/js/99.a99e4ac8.chunk.js.map": "/to-do-ionic-react/static/js/99.a99e4ac8.chunk.js.map",
     "index.html": "/to-do-ionic-react/index.html",
-    "precache-manifest.c8668573bb1bc8f5e76889c2050b48b5.js": "/to-do-ionic-react/precache-manifest.c8668573bb1bc8f5e76889c2050b48b5.js",
+    "precache-manifest.302f96d28e0e4c99384c529fd05bc286.js": "/to-do-ionic-react/precache-manifest.302f96d28e0e4c99384c529fd05bc286.js",
     "service-worker.js": "/to-do-ionic-react/service-worker.js",
     "static/css/10.dcd799cf.chunk.css.map": "/to-do-ionic-react/static/css/10.dcd799cf.chunk.css.map",
     "static/css/main.db6a66be.chunk.css.map": "/to-do-ionic-react/static/css/main.db6a66be.chunk.css.map",
-    "static/js/10.cac1330e.chunk.js.LICENSE.txt": "/to-do-ionic-react/static/js/10.cac1330e.chunk.js.LICENSE.txt",
+    "static/js/10.bbf8e902.chunk.js.LICENSE.txt": "/to-do-ionic-react/static/js/10.bbf8e902.chunk.js.LICENSE.txt",
     "static/js/80.5a80de2c.chunk.js.LICENSE.txt": "/to-do-ionic-react/static/js/80.5a80de2c.chunk.js.LICENSE.txt",
     "static/js/93.4b139273.chunk.js.LICENSE.txt": "/to-do-ionic-react/static/js/93.4b139273.chunk.js.LICENSE.txt",
     "static/js/95.51045c2e.chunk.js.LICENSE.txt": "/to-do-ionic-react/static/js/95.51045c2e.chunk.js.LICENSE.txt",
@@ -913,8 +913,8 @@
   "entrypoints": [
     "static/js/runtime-main.cf9277a3.js",
     "static/css/10.dcd799cf.chunk.css",
-    "static/js/10.cac1330e.chunk.js",
+    "static/js/10.bbf8e902.chunk.js",
     "static/css/main.db6a66be.chunk.css",
-    "static/js/main.a4f4bed4.chunk.js"
+    "static/js/main.2d2ec4eb.chunk.js"
   ]
 }
