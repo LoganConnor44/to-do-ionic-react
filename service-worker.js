@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 importScripts(
-  "/to-do-ionic-react/precache-manifest.d50645d6aa2132c22503305b531f7761.js"
+  "/to-do-ionic-react/precache-manifest.a35a104475b86daa9de64d80fce1c65c.js"
 );
 
 self.addEventListener('message', (event) => {
