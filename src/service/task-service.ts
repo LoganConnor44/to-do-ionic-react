@@ -8,7 +8,7 @@ import { IBrowserTask } from '../entity/iBrowserTask';
 
 class TaskService {
     private db: ToDoDb;
-    private domain: string = 'http://localhost:8080/';
+    private domain: string = 'http://192.168.1.2:8080/';
     private getPath: string = 'to-do/task/';
     private deletePath: string = 'to-do/task/'
     private getRemoteUpdatesPath: string = 'to-do/updates/';

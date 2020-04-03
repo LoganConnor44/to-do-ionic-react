@@ -9,6 +9,7 @@ import Home from './pages/Home';
 import List from './pages/List';
 import SignIn from './pages/SignIn';
 import { home, list, person } from 'ionicons/icons';
+import InstallPwa from './components/InstallPwa';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -49,6 +50,7 @@ const appPages: AppPage[] = [
 
 const App: React.FC = () => (
 	<IonApp>
+		<InstallPwa />
 		<IonReactRouter>
 			<IonSplitPane contentId="main">
 				<Menu appPages={appPages} />

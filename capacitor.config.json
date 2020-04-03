@@ -1,6 +1,6 @@
 {
   "appId": "io.ionic.starter",
-  "appName": "ionic-five-react-to-list-app",
+  "appName": "to-do-ionic-react",
   "bundledWebRuntime": false,
   "npmClient": "npm",
   "webDir": "build",
