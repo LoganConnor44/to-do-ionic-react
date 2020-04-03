@@ -1,6 +1,6 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "5c0fc47e77810e21479842b184d6dc38",
+    "revision": "ee34ffc951c9271aaf6d8de358962027",
     "url": "/to-do-ionic-react/index.html"
   },
   {
@@ -8,7 +8,7 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/to-do-ionic-react/static/css/10.554a611d.chunk.css"
   },
   {
-    "revision": "f5f8967cabf5868aae52",
+    "revision": "5c3885edf6270f3b869b",
     "url": "/to-do-ionic-react/static/css/main.db6a66be.chunk.css"
   },
   {
@@ -428,8 +428,8 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/to-do-ionic-react/static/js/99.a99e4ac8.chunk.js.LICENSE.txt"
   },
   {
-    "revision": "f5f8967cabf5868aae52",
-    "url": "/to-do-ionic-react/static/js/main.c938ec12.chunk.js"
+    "revision": "5c3885edf6270f3b869b",
+    "url": "/to-do-ionic-react/static/js/main.ace39f40.chunk.js"
   },
   {
     "revision": "258172fbb99d661acb9b",
